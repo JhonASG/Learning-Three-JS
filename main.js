@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import WebGL from 'three/addons/capabilities/WebGL.js'
 
 const scene = new THREE.Scene(); // Crea una escena
 const camera = new THREE.PerspectiveCamera( 75, window.innerWidth/window.innerHeight, 0.1, 1000 ); // Crea una cámara con perspectiva
@@ -24,4 +25,11 @@ function animate() {
     renderer.render(scene, camera); // Renderiza la escena
 }
 
-animate();
+//Verificar si el navegador soporta webgl antes de renderizar la escena
+if ( WebGL.isWebGLAvailable() ) {
+    animate();
+}
+else {
+    const warning = WebGL.getWebGLErrorMessage();
+    document.getElementById('BrowserNoCompatibility').appendChild(warning);
+}
