@@ -2,6 +2,8 @@ import * as THREE from 'three';
 import WebGL from 'three/addons/capabilities/WebGL.js' //Clase para verificar si WebGl es compatible en el navegador
 import { TextGeometry } from 'three/addons/geometries/TextGeometry.js' //Clase para generar texto con geometria
 import { FontLoader } from 'three/examples/jsm/loaders/FontLoader.js';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js'; //Importamos la clase GLTFLoader para cargar modelos 3D - GBL || GLTF
+import { FBXLoader } from 'three/addons/loaders/FBXLoader.js'; //Importamos la clase FBXLoader para cargar modelos 3D - FBX (three/examples/jsm/Addons.js)
 
 const scene = new THREE.Scene(); // Crea una escena
 const camera = new THREE.PerspectiveCamera( 75, window.innerWidth/window.innerHeight, 0.1, 1000 ); // Crea una cámara con perspectiva
@@ -112,14 +114,109 @@ loader.load('./fonts/gentilis_regular.typeface.json', function (font) {
 });
 //************************//
 
+//ImageBitmapLoader//
+//proporciona una vía asincrónica y eficiente en cuanto a recursos para preparar texturas para renderizar en WebGL.//
+let mesh;
+const loaderImageBitmap = new THREE.ImageBitmapLoader();
+loaderImageBitmap.setOptions({ imageOrientation: 'flipY' });
+
+loaderImageBitmap.load(
+    './textures/water.jpg',
+    function (imageBitmap) {
+        const texture = new THREE.CanvasTexture(imageBitmap);
+        const material = new THREE.MeshBasicMaterial({ map: texture });
+        const box = new THREE.BoxGeometry(1, 1, 1);
+        mesh = new THREE.Mesh(box, material);
+
+        mesh.scale.set(100, 100, 100);
+        mesh.position.set(250, 250, 0);
+        scene.add(mesh);
+    },
+    undefined,
+    function (error) {
+        console.error(error);
+    }
+)
+//************************//
+
+//Loading Model 3D - GLB//
+const loaderModel3D = new GLTFLoader();
+
+loaderModel3D.load('./models/Spiderman.glb', function ( gltf ) {
+    gltf.scene.scale.set(2, 2, 2);
+    gltf.scene.position.set(300, -200, 0);
+    scene.add( gltf.scene );
+}, undefined, function ( error ) {
+    console.error( error );
+});
+//************************//
+
+//Loading Model 3D - FBX//
+const loaderModel3DFBX = new FBXLoader();
+let mixer;
+
+loaderModel3DFBX.load("./models/SoccerPenaltyKick.fbx", function( fbx ) {
+    fbx.scale.set(1, 1, 1);
+    fbx.position.set(-200, -100, 0);
+    fbx.rotation.y = (13 * Math.PI) / 6;
+
+    //Adding Animation Model 3D - FBX//
+    mixer = new THREE.AnimationMixer(fbx);
+    const action = mixer.clipAction(fbx.animations[0]);
+    action.play();
+    action.timeScale = 1.25; // Adjust the animation speed
+    //************************//
+
+    scene.add(fbx);
+}, undefined, function ( error ) {
+    console.error( error );
+});
+//************************//
+
+//Creating a direction light//
+const directionalLight = new THREE.DirectionalLight(0xffffff, 10);
+directionalLight.position.set(0, 10, 0);
+scene.add(directionalLight);
+//************************//
+
+//Creating a ambient light//
+const ambientLight = new THREE.AmbientLight(0xffffff, 2);
+scene.add(ambientLight);
+//************************//
+
+//How to dispose of objects//
+/*
+BufferGeometry.dispose(): Si una geometría queda obsoleta en su aplicación, 
+ejecute el método para liberar todos los recursos relacionados.
+
+Material.dispose(): eliminación de materiales, el shader solo puede ser borrado
+unicamente si primero se elimino el material.
+
+Texture.dispose(): eliminación de la instacia creada por la texture en three js (WebGLTexture)
+
+ImageBitmap.close(): es usado cuando se usa ImageBitmap para la textura
+esto se encargará de eliminar los recursos del lado de la CPU.
+
+Render Targets: objetos de tipo WebGLRenderTarget, son desasignados ejecutando WebGLRenderTarget.dispose() 
+*/
+//************************//
+
 //Function to rendering scene
 function animate() {
     requestAnimationFrame( animate );
+
     cube.rotation.x += 0.01; // Rota el cubo en el eje X
     cube.rotation.y += 0.01; // Rota el cubo en el eje Y
     line02.rotation.x += 0.001; // Rota la linea en el eje X
     line02.rotation.y += 0.001; // Rota la linea en el eje Y
     line02.rotation.z += 0.001; // Rota la linea en el eje Z
+
+    if (mesh != null) {
+        mesh.rotation.x += 0.01;
+        mesh.rotation.y += 0.01;
+    }
+    
+    if (mixer != null) mixer.update(0.01); //(deltaTime/1000)/60
     renderer.render(scene, camera); // Renderiza la escena
 }
 
